@@ -50,6 +50,22 @@ def init_db():
             realnano LONG,
             ebid INT) ''')
 
+
+def calculate_exec_time(ebid):
+    # Query for fetching class names in reverse order
+    cname_query = 'SELECT class FROM class_data WHERE ebid=? ORDER BY seq DESC'
+
+    # ignore first item which is 'total'
+    classes = [x for (x,) in cur.execute(cname_query, (ebid,)).fetchall()[1:]]
+
+    idx = 0
+    for id_name in classes:
+        class_name = id_name.split('_')[0]
+        cdata = get_class_metric_instance(class_name, id_name, ebid)
+        print('%s: %d' % (class_name, cdata.calculate_class_totaltime(cur, classes[idx+1:])))
+        idx += 1
+
+# main function
 if __name__ == '__main__':
     if len(sys.argv) != 4 or sys.argv[1] != '-f':
         usage()
@@ -101,6 +117,10 @@ if __name__ == '__main__':
 
     # update total running time(eb id is 0)
     cur.execute('INSERT INTO class_data(class, nanotime) VALUES (?, ?)', ('query_total', total_time))
+
+    # Calculation by Exec
+    for ebid in ebids:
+        calculate_exec_time(ebid)
 
     cur.close()
     conn.commit()
