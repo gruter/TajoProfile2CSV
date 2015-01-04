@@ -23,14 +23,16 @@ def insert_method_data(identified_name, data, ebid):
         cur.execute('INSERT INTO method_data VALUES (?, ?, ?, null, ?)', (identified_name, method_name, line[1], ebid))
 
 
-def init_db():
+def init_db(is_debug):
     global conn, cur
 
-    if os.path.isfile('tajo.db'):
-        os.remove('tajo.db')
+    if is_debug:
+        if os.path.isfile('tajo.db'):
+            os.remove('tajo.db')
+        conn = sqlite3.connect('tajo.db')
 
-#    conn = sqlite3.connect(':memory:')
-    conn = sqlite3.connect('tajo.db')
+    else:
+        conn = sqlite3.connect(':memory:')
 
     cur = conn.cursor()
 
@@ -83,9 +85,7 @@ if __name__ == '__main__':
 
     json_obj = json.loads(json_str)
 
-#    print(json_str)
-
-    init_db()
+    init_db(True)
 
     # Data loading
     seq = 1
