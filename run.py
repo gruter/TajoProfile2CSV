@@ -42,7 +42,6 @@ def init_db(is_debug):
     cur.execute('''CREATE TABLE class_data
             (seq INT,
             class TEXT,
-            nanotime LONG,
             ebid INT) ''')
 
     cur.execute(''' CREATE TABLE method_data
@@ -109,16 +108,11 @@ if __name__ == '__main__':
     # Calculation by Excution Block
     ebids = [x for (x,) in cur.execute('SELECT ebid FROM eb').fetchall()]
 
-    for ebid in ebids:
-        total_time = cur.execute('SELECT nanotime FROM method_data WHERE class=? AND method=? AND ebid=?'
-                                 , ('total', 'total', ebid)).fetchone()[0]
+    total_time = cur.execute('SELECT sum(nanotime) FROM method_data WHERE class=? AND method=?'
+                             , ('total', 'total')).fetchone()[0]
 
-        cur.execute('UPDATE class_data SET nanotime=? WHERE class=? AND ebid=?', (total_time, 'total', ebid))
-
-    total_time = cur.execute('SELECT sum(nanotime) FROM class_data WHERE class=?', ('total',)).fetchone()[0]
-
-    # update total running time(eb id is 0)
-    cur.execute('INSERT INTO class_data(class, nanotime) VALUES (?, ?)', ('query_total', total_time))
+    # update total running time
+    cur.execute('INSERT INTO method_data(class, nanotime) VALUES (?, ?)', ('query_total', total_time))
 
     # Calculation by Exec
     for ebid in ebids:
