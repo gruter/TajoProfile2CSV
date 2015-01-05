@@ -1,3 +1,4 @@
+import sys
 import os
 import json
 import sqlite3
@@ -62,9 +63,11 @@ def calculate_exec_time(ebid):
     idx = 0
     for id_name in classes:
         class_name = id_name.split('_')[0]
-        cdata = get_class_metric_instance(class_name, id_name, ebid)
-        print('%s: %d' % (class_name, cdata.calculate_class_totaltime(cur, classes[idx+1:])))
+        cdata = get_class_metric_instance(cur, class_name, id_name, ebid)
+        cdata.calculate_class_time(classes[idx+1:])
         idx += 1
+
+    conn.commit()
 
 # main function
 if __name__ == '__main__':
