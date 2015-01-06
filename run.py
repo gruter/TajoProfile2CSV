@@ -68,6 +68,46 @@ def calculate_exec_time(ebid):
 
     conn.commit()
 
+
+def print_csv(outf):
+    ebids = [x for (x,) in cur.execute('SELECT ebid FROM eb ORDER BY seq ASC').fetchall()]
+
+    class_names = []
+
+    total_time = cur.execute('SELECT nanotime FROM method_data WHERE class=?', ('query_total',)).fetchone()[0]
+
+    for ebid in ebids:
+        classes = [x for (x,) in cur.execute('SELECT class FROM class_data WHERE ebid = ? ORDER BY seq ASC',
+                                             (ebid,)).fetchall()]
+        for cname in classes:
+            class_names.append((ebid, cname))
+
+        ebtime = cur.execute('SELECT nanotime FROM method_data WHERE ebid=? AND class=? AND method=?',
+                             (ebid, 'total', 'total')).fetchone()[0]
+
+        outf.write('EB%d,,,%d,%f\n' % (ebid, ebtime, ebtime/total_time))
+
+        for cname in classes:
+            methods = cur.execute('SELECT class, method, nanotime, realnano FROM method_data WHERE class=? AND ebid=?',
+                                  (cname, ebid)).fetchall()
+
+            if methods[0][0] == 'total':
+                continue
+
+            for each_method in methods:
+                ''' index 0 : class
+                    1 : method
+                    2 : nanotime
+                    3 : realnano '''
+                if each_method[2] == 0 or each_method[1] == 'inTuples' or each_method[1] == 'outTuples':
+                    continue
+
+                nanotime = each_method[2] if each_method[3] is None else each_method[3]
+                outf.write(',%s,%s,%d,%.5f\n' % (each_method[0], each_method[1], nanotime, nanotime / ebtime))
+
+        outf.write('\n')
+
+
 # main function
 if __name__ == '__main__':
     if len(sys.argv) != 4 or sys.argv[1] != '-f':
@@ -77,6 +117,7 @@ if __name__ == '__main__':
     out_file = open(sys.argv[3], 'w')
 
     json_str = in_file.read()
+    in_file.close()
 
     sidx = json_str.find('<pre>')
 
@@ -117,6 +158,9 @@ if __name__ == '__main__':
     # Calculation by Exec
     for ebid in ebids:
         calculate_exec_time(ebid)
+
+    print_csv(out_file)
+    out_file.close()
 
     cur.close()
     conn.commit()
