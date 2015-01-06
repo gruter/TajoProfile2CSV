@@ -7,7 +7,8 @@ from metric import *
 
 
 def usage():
-    print('Usage : python3 %s -f <input:json file> <output:csv file>' % (sys.argv[0],))
+    print('Usage : python3 run.py [-d] <input:json file> [other json files, ...]')
+    print('\t-d : for debug (Use local file db. It is made in memory at default.)')
     sys.exit(0)
 
 
@@ -108,13 +109,9 @@ def print_csv(outf):
         outf.write('\n')
 
 
-# main function
-if __name__ == '__main__':
-    if len(sys.argv) != 4 or sys.argv[1] != '-f':
-        usage()
-
-    in_file = open(sys.argv[2])
-    out_file = open(sys.argv[3], 'w')
+def real_main(inf_name, outf_name, is_debug):
+    in_file = open(inf_name)
+    out_file = open(outf_name, 'w')
 
     json_str = in_file.read()
     in_file.close()
@@ -128,7 +125,7 @@ if __name__ == '__main__':
 
     json_obj = json.loads(json_str)
 
-    init_db(True)
+    init_db(is_debug)
 
     # Data loading
     seq = 1
@@ -165,3 +162,25 @@ if __name__ == '__main__':
     cur.close()
     conn.commit()
     conn.close()
+
+if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        usage()
+        sys.exit(0)
+
+    is_debug = False
+    args = sys.argv[1:]
+
+    if sys.argv[1] == '-d':
+        is_debug = True
+        args = sys.argv[2:]
+
+    for infile_name in args:
+        dotidx = infile_name.rfind('.')
+
+        if dotidx == -1:
+            outfile_name = infile_name+'.csv'
+        else:
+            outfile_name = infile_name[:dotidx]+'.csv'
+
+        real_main(infile_name, outfile_name, is_debug)
