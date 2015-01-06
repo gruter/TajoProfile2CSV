@@ -81,7 +81,20 @@ class ExternalSortExecMetric(BaseClassMetric):
         self.update_method_time('next', next_total_time - sort_total_time)
 
 
+class HashAggregateExecMetric(BaseClassMetric):
+    def calculate_class_time(self, prev_classes):
+        prev_class = prev_classes[0]
+
+        prev_next_time = self.get_method_time(cname=prev_class, method='next')
+
+        compute_time = self.get_method_time(cname=self.name, method='compute')
+        next_time = self.get_method_time(cname=self.name, method='next')
+
+        self.update_method_time('compute', compute_time - prev_next_time)
+        self.update_method_time('next', next_time - compute_time)
+
 class_name_map = {
+    'HashAggregateExec': HashAggregateExecMetric,
     'HashJoinExec': HashJoinExecMetric,
     'SeqScanExec': SeqScanExecMetric,
     'ExternalSortExec': ExternalSortExecMetric
